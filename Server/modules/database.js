@@ -144,7 +144,7 @@ class database {
                     }
                 }
                 bcrypt.hash(profile.password, 10, function (err, hash) {
-                    db.query("INSERT INTO users (name_first, name_last, username, email, password) VALUES ('" + profile.fname + "', '" + profile.lname + "', '" + profile.username + "', '" + profile.email + "', '" + hash + "' )");
+                    db.query("INSERT INTO users (name_first, name_last, username, email, password) VALUES ('" + profile.name_first + "', '" + profile.name_last + "', '" + profile.username + "', '" + profile.email + "', '" + hash + "' )");
                 });
                 return callback({
                     "result": profile,
@@ -152,6 +152,11 @@ class database {
                 });
             }
         });
+    }
+
+    // Use this function to validate if the user is logged in/is the current user
+    checkUser(token) {
+
     }
 
     // Search method used with AJAX
@@ -279,6 +284,15 @@ class database {
         });
     }
 
+    async getProjectAsync(id) {
+        return new Promise(callback => {
+            this.db.query("SELECT * FROM projects WHERE id=" + id, function (err, rows, fields) {
+                if (err) throw err;
+                callback(rows[0]);
+            });
+        });
+    }
+
     // Get doc by ID
     getDoc(id, callback) {
         let self = this;
@@ -323,6 +337,22 @@ class database {
         });
     }
 
+    async getUserAsync(id) {
+        return new Promise(callback => {
+            this.db.query("SELECT * FROM users WHERE id=" + id, function (err, rows, fields) {
+                if (err) throw err;
+                let user = rows[0];
+
+                // Remove sensitive data
+                delete user.password;
+                delete user.email;
+                delete user.username;
+
+                callback(user);
+            });
+        });
+    }
+
     getKeywords(id, callback) {
         this.db.query("SELECT * FROM keywords WHERE doc_id=" + id, function (err, rows, fields) {
             if (err) throw err;
@@ -356,25 +386,38 @@ class database {
      * @param {Number} offset Increment by one to get 25 more logs
      * @param {Function} callback Callback the log with a function
      */
-    getLog(type, id, offset, callback) {
-        let docs, journals, d, p;
-        switch (type) {
-            case "user":
-                // Grab Documents for user
-                this.db.query("SELECT * FROM ( (SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) results WHERE user_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + (20 * offset), (err, rows, fields) => {
-                    return callback(rows);
-                });
+    async getLog(type, id, offset) {
 
-                break;
-            case "project":
-                // Grab documents and journals for project by id
-                this.db.query("SELECT * FROM ( (SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) results WHERE project_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + (20 * offset), (err, rows, fields) => {
-                    return callback(rows);
-                });
-                break;
-            default:
-                return callback("Event Logs");
-        }
+        return new Promise(callback => {
+            let docs, journals, d, p;
+            switch (type) {
+                case "user":
+                    // Grab Documents for user
+                    this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE user_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + (20 * offset), (err, rows, fields) => {
+                        return callback(rows);
+                    });
+
+                    break;
+                case "project":
+                    // Grab documents and journals for project by id
+                    this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE project_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + (20 * offset), (err, rows, fields) => {
+                        return callback(rows);
+                    });
+                    break;
+                case "test":
+                    // Grab documents and journals for project by id with username instead of id
+                    this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE project_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + (20 * offset), (err, rows, fields) => {
+                        if (err) {
+                            return callback(err);
+                        } else {
+                            return callback(rows);
+                        }
+                    });
+                    break;
+                default:
+                    return callback("Event Logs");
+            }
+        });
     }
 }
 

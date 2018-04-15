@@ -142,14 +142,26 @@ app.post('/journal', (req, res) => {
 // Get a log
 // PRE: Send in account info to gain access
 app.get('/log/:type/:id', (req, res) => {
-    db.getLog(req.params.type, req.params.id, 0, function (events) {
-        res.json(events);
+    let info, data, log;
+    if (req.params.type === "user") {
+        info = db.getUserAsync(req.params.id).then((user) => { data = user; });
+    } else {
+        info = db.getProjectAsync(req.params.id).then((project) => { data = project; });
+    }
+    let logs = db.getLog(req.params.type, req.params.id, 0).then((events) => {
+        log = events;
+    });
+    Promise.all([info, logs]).then(() => {
+        return res.json({
+            "info": data,
+            "logs": log
+        });
     });
 });
 
 app.get('/log/:type/:id/:offset', function (req, res) {
     db.getLog(req.params.type, req.params.id, req.params.offset, function (events) {
-        res.json(events);
+        return res.json(events);
     });
 });
 // END OF LOGS
