@@ -1,6 +1,6 @@
 ﻿{
   "port": 1337,
-  "url": "127.0.0.1",
+  "url": "141.114.221.58",
   "host": "localhost",
   "secret": "secret_key",
   "code": "1234",

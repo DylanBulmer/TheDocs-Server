@@ -4,6 +4,27 @@ var bcrypt = require('bcrypt');
 var mysql = require('mysql');
 var settings = require("../config.json");
 
+// Recurcively Test user
+const loginTest = (username, password, users, seek) => {
+    if (seek < users.length) {
+        if (users[seek].username === username || users[seek].email === username) {
+            if (bcrypt.compareSync(password, users[seek].password)) {
+                // log data
+                let date = new Date();
+                console.log(users[seek].name_first + " " + users[seek].name_last + " (" + username + ") logged in at " + date);
+                // send data back
+                return { err: "", result: users[seek] };
+            } else {
+                return { err: "Invalid Password!" };
+            }
+        } else {
+            return loginTest(username, password, users, seek++);
+        }
+    } else {
+        return { err: 'There is no user named ' + username + '!' };
+    }
+}
+
 class database {
     constructor() {
         this.data = settings.mysql;
@@ -49,36 +70,44 @@ class database {
         console.log();
         console.log("Checking tables...");
         console.log();
-        this.db.query("CREATE TABLE IF NOT EXISTS `users` (`id` int(4) NOT NULL AUTO_INCREMENT,`username` varchar(20) NOT NULL,`password` varchar(255) NOT NULL,`email` varchar(254) NOT NULL,`name_first` varchar(50) NOT NULL,`name_last` varchar(45) NOT NULL,PRIMARY KEY (`id`),UNIQUE KEY `id_UNIQUE` (`id`),UNIQUE KEY `username_UNIQUE` (`username`),UNIQUE KEY `email_UNIQUE` (`email`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
+        this.db.query("CREATE TABLE IF NOT EXISTS `users` (`id` int(11) NOT NULL AUTO_INCREMENT,`username` varchar(20) NOT NULL,`password` varchar(255) NOT NULL,`email` varchar(254) NOT NULL,`name_first` varchar(50) NOT NULL,`name_last` varchar(45) NOT NULL,PRIMARY KEY (`id`),UNIQUE KEY `id_UNIQUE` (`id`),UNIQUE KEY `username_UNIQUE` (`username`),UNIQUE KEY `email_UNIQUE` (`email`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
             if (err) {
                 console.log(err.message);
                 console.log("CREATE TABLE 'Users' ........ Failed");
             } else {
-                console.log("TABLE 'Users' .......... Good");
+                console.log("TABLE 'Users' ............... Good");
             }
         });
-        this.db.query("CREATE TABLE IF NOT EXISTS `projects` (`id` int(4) NOT NULL AUTO_INCREMENT,`name` varchar(50) NOT NULL DEFAULT 'Unnamed Project',PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
+        this.db.query("CREATE TABLE IF NOT EXISTS `projects` (`id` int(11) NOT NULL AUTO_INCREMENT,`name` varchar(50) NOT NULL DEFAULT 'Unnamed Project',`description` varchar(255) DEFAULT NULL,`homepage` varchar(255) DEFAULT NULL,`started` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,`completed` timestamp NULL DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
             if (err) {
                 console.log(err.message);
                 console.log("CREATE TABLE 'Projects' ..... Failed");
             } else {
-                console.log("TABLE 'Projects' ....... Good");
+                console.log("TABLE 'Projects' ............ Good");
             }
         });
-        this.db.query("CREATE TABLE IF NOT EXISTS `keywords` (`id` int(20) NOT NULL AUTO_INCREMENT,`keyword` varchar(50) NOT NULL,`doc_id` int(10) unsigned NOT NULL,PRIMARY KEY (`id`),UNIQUE KEY `id_UNIQUE` (`id`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
+        this.db.query("CREATE TABLE IF NOT EXISTS `keywords` (`id` int(11) NOT NULL AUTO_INCREMENT,`keyword` varchar(50) NOT NULL,`doc_id` int(10) unsigned NOT NULL,PRIMARY KEY (`id`),UNIQUE KEY `id_UNIQUE` (`id`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
             if (err) {
                 console.log(err.message);
                 console.log("CREATE TABLE 'Keywords' ..... Failed");
             } else {
-                console.log("TABLE 'Keywords' ....... Good");
+                console.log("TABLE 'Keywords' ............ Good");
             }
         });
-        this.db.query("CREATE TABLE IF NOT EXISTS `documents` (`id` int(10) NOT NULL AUTO_INCREMENT,`user_id` int(4) NOT NULL,`project_id` int(4) NOT NULL,`title` varchar(60) NOT NULL,`url` varchar(255) DEFAULT NULL,`description` varchar(255) NOT NULL,`solution` blob NOT NULL,`created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`),UNIQUE KEY `id_UNIQUE` (`id`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
+        this.db.query("CREATE TABLE IF NOT EXISTS `documents` (`id` int(11) NOT NULL AUTO_INCREMENT,`user_id` int(4) NOT NULL,`project_id` int(4) NOT NULL,`title` varchar(60) NOT NULL,`url` varchar(255) DEFAULT NULL,`description` varchar(255) NOT NULL,`solution` blob NOT NULL,`created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`),UNIQUE KEY `id_UNIQUE` (`id`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
             if (err) {
                 console.log(err.message);
                 console.log("CREATE TABLE 'Documents' .... Failed");
             } else {
-                console.log("TABLE 'Documents' ...... Good");
+                console.log("TABLE 'Documents' ........... Good");
+            }
+        });
+        this.db.query("CREATE TABLE IF NOT EXISTS `journals` (`id` int(11) NOT NULL AUTO_INCREMENT,`user_id` int(4) NOT NULL,`project_id` int(4) NOT NULL,`created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,`description` varchar(255) NOT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
+            if (err) {
+                console.log(err.message);
+                console.log("CREATE TABLE 'Journals' ..... Failed");
+            } else {
+                console.log("TABLE 'Journals' ............ Good\n");
             }
         });
     }
@@ -89,34 +118,7 @@ class database {
         this.db.query("SELECT * FROM users", function (err, result) {
             if (err) throw err;
             console.log("User is connecting");
-            for (let i = 0; i < result.length; i++) {
-                if (result[i].username === username || result[i].email === username) {
-                    // Tests to see if passwords match
-                    bcrypt.compare(password, result[i].password, function (err, pass) {
-                        if (pass) {
-                            user = result[i];
-                            if (user !== null) {
-                                // Logging
-                                let date = new Date();
-                                console.log("User: " + result[i].username + " logged in at " + date);
-                                // Send user back
-                                return callback({
-                                    "result": result[i],
-                                    "err": ""
-                                });
-                            }
-                        } else {
-                            return callback({
-                                "err": "Invalid password"
-                            });
-                        }
-                    });
-                } else if (i === result.length - 1) {
-                    return callback({
-                        "err": "Invaild Username/Email"
-                    });
-                }
-            }
+            return callback(loginTest(username, password, result, 0));
         });
     }
 
@@ -393,20 +395,20 @@ class database {
             switch (type) {
                 case "user":
                     // Grab Documents for user
-                    this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE user_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + (20 * offset), (err, rows, fields) => {
+                    this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE user_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
                         return callback(rows);
                     });
 
                     break;
                 case "project":
                     // Grab documents and journals for project by id
-                    this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE project_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + (20 * offset), (err, rows, fields) => {
+                    this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE project_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
                         return callback(rows);
                     });
                     break;
                 case "test":
                     // Grab documents and journals for project by id with username instead of id
-                    this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE project_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + (20 * offset), (err, rows, fields) => {
+                    this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE project_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
                         if (err) {
                             return callback(err);
                         } else {

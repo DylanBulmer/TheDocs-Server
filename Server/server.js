@@ -6,7 +6,7 @@ const bcrypt = require('bcrypt');
 const mysql = require('mysql');
 const path = require('path');
 const pug = require('pug');
-const store = require('./modules/store');
+const store = require('./modules/store.js');
 
 // Require Web views and sources to get packaged
 const admin = path.join(__dirname, '/views/admin.pug');
@@ -177,7 +177,7 @@ app.get('/admin', (req, res) => {
         });
 
         Promise.all([p]).then(() => {
-            res.render(admin, {
+            res.render('admin', {
                 user: 'Test User',
                 data: {
                     port: settings.port,
