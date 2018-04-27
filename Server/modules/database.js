@@ -18,7 +18,7 @@ const loginTest = (username, password, users, seek) => {
                 return { err: "Invalid Password!" };
             }
         } else {
-            return loginTest(username, password, users, seek++);
+            return loginTest(username, password, users, seek + 1);
         }
     } else {
         return { err: 'There is no user named ' + username + '!' };
@@ -126,7 +126,6 @@ class database {
     register(profile, callback) {
         let user;
         let db = this.db;
-        console.log(profile);
         this.db.query("SELECT * FROM users", function (err, result) {
             if (err) throw err;
             if (settings.code !== profile.code) {
@@ -157,7 +156,7 @@ class database {
     }
 
     // Use this function to validate if the user is logged in/is the current user
-    checkUser(token) {
+    checkUser(opts) {
 
     }
 
