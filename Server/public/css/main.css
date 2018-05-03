@@ -198,6 +198,7 @@ content>form {
 }
 
 content > form > input, content > form > textarea {
+    font-size: small;
     min-width: calc(50% - 15px - 2em);
     width: calc(50% - 15px - 2em);
     max-width: calc(50% - 15px - 2em);

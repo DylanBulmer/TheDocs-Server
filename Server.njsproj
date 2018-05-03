@@ -39,6 +39,7 @@
     <Content Include="public\fonts\Open_Sans\OpenSans-Regular.ttf" />
     <Content Include="public\fonts\Open_Sans\OpenSans-SemiBold.ttf" />
     <Content Include="public\fonts\Open_Sans\OpenSans-SemiBoldItalic.ttf" />
+    <Content Include="public\image\TheDocsLogoWhite.svg" />
     <Content Include="README.md" />
     <Compile Include="server.js" />
     <Content Include="build\icon.ico" />
@@ -47,14 +48,7 @@
     <Content Include="views\admin.pug" />
     <Content Include="public\css\main.css" />
     <Content Include="public\css\markdown.css" />
-    <Content Include="public\image\TheDocsLogo.png" />
-    <Content Include="public\image\TheDocsLogoNew_White.png" />
-    <Content Include="public\image\TheDocsLogoSmall.png" />
-    <Content Include="public\image\TheDocsLogoSmall_White.png" />
     <Content Include="public\image\TheDocsLogo.svg" />
-    <Content Include="public\image\TheDocsLogoNew_White.svg" />
-    <Content Include="public\image\TheDocsLogoSmall.svg" />
-    <Content Include="public\image\TheDocsLogoSmall_White.svg" />
     <Compile Include="public\js\pageViewer.js" />
   </ItemGroup>
   <ItemGroup>
