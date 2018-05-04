@@ -33,6 +33,7 @@ app.post('/', function (req, res) {
     res.send({
         'url': settings.url,
         'host': settings.host,
+        'organization': settings.organization,
         'check': true
     });
 });
@@ -107,6 +108,16 @@ app.post('/new', function (req, res) {
     } else {
         next();
     }
+});
+
+app.post('/new/project', (req, res) => {
+    project = req.body;
+    db.createProject(project.name, (err, result) => {
+        res.json({
+            err: err,
+            result: result
+        });
+    }, project);
 });
 
 // Get projects

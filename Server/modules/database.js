@@ -242,16 +242,31 @@ class database {
     }
 
     // create a new project; use when user needs to add project
-    createProject(name, callback) {
-        this.db.query("insert into projects (name) values ('" + name + "' )", function (err, result) {
-            if (err) {
-                return callback({
-                    'err': err
-                });
-            } else {
-                return callback(false, { 'id': result.insertId });
-            }
-        });
+    createProject(name, callback, opts) {
+        if (opts) {
+            let project = opts;
+            project.name = name;
+
+            this.db.query("insert into projects SET ?", project, function (err, result) {
+                if (err) {
+                    return callback({
+                        'err': err
+                    });
+                } else {
+                    return callback(false, { 'id': result.insertId });
+                }
+            });
+        } else {
+            this.db.query("insert into projects (name) values ('" + name + "' )", function (err, result) {
+                if (err) {
+                    return callback({
+                        'err': err
+                    });
+                } else {
+                    return callback(false, { 'id': result.insertId });
+                }
+            });
+        }
     }
 
     // create a new journal
