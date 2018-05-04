@@ -245,7 +245,6 @@ class database {
     createProject(name, callback, opts) {
         if (opts) {
             let project = opts;
-            project.name = name;
 
             this.db.query("insert into projects SET ?", project, function (err, result) {
                 if (err) {

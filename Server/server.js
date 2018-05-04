@@ -111,7 +111,7 @@ app.post('/new', function (req, res) {
 });
 
 app.post('/new/project', (req, res) => {
-    project = req.body;
+    let project = req.body;
     db.createProject(project.name, (err, result) => {
         res.json({
             err: err,
