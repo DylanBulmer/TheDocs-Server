@@ -55,9 +55,9 @@ app.post('/register', function (req, res) {
 });
 
 // Serach the docs
-app.get('/search', function (req, res) {
-    let keyword = req.query.key;
-    db.searchKeyword(keyword, function (data) {
+app.post('/search', function (req, res) {
+    let profile = req.body;
+    db.searchKeyword(profile.key, profile, function (data) {
         res.json(data);
     });
 });

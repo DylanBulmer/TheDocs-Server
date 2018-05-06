@@ -70,7 +70,7 @@ class database {
         console.log();
         console.log("Checking tables...");
         console.log();
-        this.db.query("CREATE TABLE IF NOT EXISTS `users` (`id` int(11) NOT NULL AUTO_INCREMENT,`username` varchar(20) NOT NULL,`password` varchar(255) NOT NULL,`email` varchar(254) NOT NULL,`name_first` varchar(50) NOT NULL,`name_last` varchar(45) NOT NULL,PRIMARY KEY (`id`),UNIQUE KEY `id_UNIQUE` (`id`),UNIQUE KEY `username_UNIQUE` (`username`),UNIQUE KEY `email_UNIQUE` (`email`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
+        this.db.query("CREATE TABLE IF NOT EXISTS `users` (`id` int(11) NOT NULL AUTO_INCREMENT,`username` varchar(20) NOT NULL,`password` varchar(255) NOT NULL,`email` varchar(254) NOT NULL,`name_first` varchar(50) NOT NULL,`name_last` varchar(45) NOT NULL,`token` VARCHAR(255) NOT NULL,PRIMARY KEY (`id`),UNIQUE KEY `id_UNIQUE` (`id`),UNIQUE KEY `username_UNIQUE` (`username`),UNIQUE KEY `email_UNIQUE` (`email`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
             if (err) {
                 console.log(err.message);
                 console.log("CREATE TABLE 'Users' ........ Failed");
@@ -144,8 +144,31 @@ class database {
                         });
                     }
                 }
+
+                // Generate Token
+
+                let passHash = 0;
+                let divide = 0;
+                let token = "";
+
+                for (let i = 0; i < pass3.length; i++) {
+                    passHash += (pass2.charCodeAt(i));
+                }
+
+                divide = Math.ceil(passHash / 21);
+
+                while (passHash > divide) {
+                    let letter = String.fromCharCode(48 + (passHash % 74));
+                    token += letter;
+                    passHash -= divide;
+                }
+
+                token = bcrypt.hashSync(token, passHash % 21);
+
+                // Save user to database
+
                 bcrypt.hash(profile.password, 10, function (err, hash) {
-                    db.query("INSERT INTO users (name_first, name_last, username, email, password) VALUES ('" + profile.name_first + "', '" + profile.name_last + "', '" + profile.username + "', '" + profile.email + "', '" + hash + "' )");
+                    db.query("INSERT INTO users (name_first, name_last, username, email, password, token) VALUES ('" + profile.name_first + "', '" + profile.name_last + "', '" + profile.username + "', '" + profile.email + "', '" + hash + "', '" + token + "' )");
                 });
                 return callback({
                     "result": profile,
@@ -156,45 +179,73 @@ class database {
     }
 
     // Use this function to validate if the user is logged in/is the current user
-    checkUser(opts) {
+    async checkUser(profile) {
+        // profile must include: id, user( name|| email ) and token.
+        return new Promise(callback => {
+            profile = profile.user;
+            this.db.query("SELECT * FROM users WHERE id=" + profile.id, function (err, rows, fields) {
+                if (err) callback(err);
+                let user = rows[0];
 
+                if ((profile.username === user.username || profile.username === user.email) && profile.token === user.token) {
+                    return callback(true);
+                } else {
+                    return callback(false);
+                }
+            });
+        });
     }
 
     // Search method used with AJAX
-    searchKeyword(key, callback) {
-        // Fix this: change offset to the number of already loaded elements.
-        let offset = 0;
-        let self = this;
-        this.db.query("SELECT * FROM keywords WHERE keyword LIKE '%" + key + "%' ORDER BY id DESC LIMIT 25 OFFSET " + offset, function (err, rows, fields) {
-            if (err) throw err;
-            // Add Doc title to each element
-            let data = [];
-            if (rows.length > 0) {
-                for (let i = 0; i < rows.length; i++) {
-                    self.getDoc(rows[i].doc_id, function (doc) {
-                        if (data.length === 0) {
-                            rows[i]['title'] = doc.title;
-                            data.push(rows[i]);
-                        } else {
-                            for (let d = 0; d < data.length; d++) {
-                                if (data[d].doc_id === rows[i].doc_id) {
-                                    if (data[d].keyword !== rows[i].keyword) {
-                                        data[d].keyword += ', ' + rows[i].keyword;
-                                    }
-                                } else if (d === data.length - 1) {
+    searchKeyword(key, profile, callback) {
+
+        this.checkUser(profile).then(check => {
+            if (check) {
+                // Fix this: change offset to the number of already loaded elements.
+                let offset = 0;
+                let self = this;
+                this.db.query("SELECT * FROM keywords WHERE keyword LIKE '%" + key + "%' ORDER BY id DESC LIMIT 25 OFFSET " + offset, function (err, rows, fields) {
+                    if (err) throw err;
+                    // Add Doc title to each element
+                    let data = [];
+                    if (rows.length > 0) {
+                        for (let i = 0; i < rows.length; i++) {
+                            self.getDoc(rows[i].doc_id, function (doc) {
+                                if (data.length === 0) {
                                     rows[i]['title'] = doc.title;
                                     data.push(rows[i]);
+                                } else {
+                                    for (let d = 0; d < data.length; d++) {
+                                        if (data[d].doc_id === rows[i].doc_id) {
+                                            if (data[d].keyword !== rows[i].keyword) {
+                                                data[d].keyword += ', ' + rows[i].keyword;
+                                            }
+                                        } else if (d === data.length - 1) {
+                                            rows[i]['title'] = doc.title;
+                                            data.push(rows[i]);
+                                        }
+                                    }
                                 }
-                            }
-                        }
 
-                        if (i === rows.length - 1) {
-                            callback(data);
+                                if (i === rows.length - 1) {
+                                    let respond = {
+                                        err: false,
+                                        result: data
+                                    }
+                                    callback(respond);
+                                }
+                            });
                         }
-                    });
-                }
+                    } else {
+                        let respond = {
+                            err: false,
+                            result: data
+                        }
+                        callback(respond);
+                    }
+                });
             } else {
-                callback(data);
+                callback({ err: "You're not logged in!" });
             }
         });
     }
