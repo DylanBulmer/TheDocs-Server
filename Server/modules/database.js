@@ -151,8 +151,8 @@ class database {
                 let divide = 0;
                 let token = "";
 
-                for (let i = 0; i < pass3.length; i++) {
-                    passHash += (pass2.charCodeAt(i));
+                for (let i = 0; i < profile.password.length; i++) {
+                    passHash += (profile.password.charCodeAt(i));
                 }
 
                 divide = Math.ceil(passHash / 21);
