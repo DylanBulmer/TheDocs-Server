@@ -170,6 +170,9 @@ class database {
                 bcrypt.hash(profile.password, 10, function (err, hash) {
                     db.query("INSERT INTO users (name_first, name_last, username, email, password, token) VALUES ('" + profile.name_first + "', '" + profile.name_last + "', '" + profile.username + "', '" + profile.email + "', '" + hash + "', '" + token + "' )");
                 });
+
+                profile.token = token;
+
                 return callback({
                     "result": profile,
                     "err": ""
