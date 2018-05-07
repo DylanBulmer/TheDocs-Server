@@ -338,7 +338,7 @@ class database {
     // Get projects
     getProjects(callback) {
         // Fix this: change offset to the number of already loaded elements.
-        this.db.query("SELECT * FROM projects", function (err, rows, fields) {
+        this.db.query("SELECT * FROM projects DESC", function (err, rows, fields) {
             if (err) throw err;
             callback(rows);
         });
