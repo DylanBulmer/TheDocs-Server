@@ -216,6 +216,7 @@ class database {
                             self.getDoc(rows[i].doc_id, function (doc) {
                                 if (data.length === 0) {
                                     rows[i]['title'] = doc.title;
+                                    rows[i]['project'] = doc.project;
                                     data.push(rows[i]);
                                 } else {
                                     for (let d = 0; d < data.length; d++) {
@@ -225,6 +226,7 @@ class database {
                                             }
                                         } else if (d === data.length - 1) {
                                             rows[i]['title'] = doc.title;
+                                            rows[i]['project'] = doc.project;
                                             data.push(rows[i]);
                                         }
                                     }
