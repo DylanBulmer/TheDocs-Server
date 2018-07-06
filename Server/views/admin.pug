@@ -22,57 +22,71 @@ html
                     h3 MySQL
                 span(style="position: absolute; width: 100%; text-align: center; bottom: 10px; left: 0;") Copyright &copy; 2018 Dylan Bulmer
         content(id="Status")
-            h1 The Docs
-            p= 'Running on port ' + data.port
-            blockquote
-                p!= '<b>MySQL:</b> ' + ((data.mysql.connection) ? 'Connected' : 'Disconnected')
-                p= 'Number of users: ' + data.mysql.users
+            span
+                h1 The Docs
+                p= 'Running on port ' + data.port
+                blockquote
+                    p!= '<b>MySQL:</b> ' + ((data.mysql.connection) ? 'Connected' : 'Disconnected')
+                    p= 'Number of users: ' + data.mysql.users
         content(id="General")
-            h1.title General Configuration
-            hr
-            form(method="" action="")
-                h3 Settings
-                label Port
-                input(placeholder = "Default: 1337" name="port" value=data.port)
-                br
-                label Hosting Address (IPv4)
-                input(placeholder = "Default: 127.0.0.1" name="url" value=data.url)
-                br
-                label Hosting Domain
-                input(placeholder = "Default: localhost" name="host" value=data.host)
-                br
-                label Registation Code
-                input(placeholder = "Default: 1234" name="code" value=data.code)
-                br
-                br
-                h3 Organization Settings
-                label Name
-                input(placeholder = "Default: None" name="org[name]" value=data.organization.name autocomplete='organization')
-                br
-                label Loading Screen Message
-                textarea(name="org[statement]" placeholder = "Default: Welcome to The Docs!")= data.organization.statement
-                br
-                input(type="hidden" name="type" value="general")
-                button Save
+            span
+                h1.title General Configuration
+                hr
+                form(method="POST")
+                    h3 Settings
+                    label Port
+                    input(placeholder = "Default: 1337" name="port" value=data.port)
+                    br
+                    label Hosting Address (IPv4)
+                    input(placeholder = "Default: 127.0.0.1" name="url" value=data.url)
+                    br
+                    label Hosting Domain
+                    input(placeholder = "Default: localhost" name="host" value=data.host)
+                    br
+                    label Registation Code
+                    input(placeholder = "Default: 1234" name="code" value=data.code)
+                    br
+                    br
+                    h3 Organization Settings
+                    label Name
+                    input(placeholder = "Default: None" name="org[name]" value=data.organization.name autocomplete='organization')
+                    br
+                    label Loading Screen Message
+                    textarea(name="org[statement]" placeholder = "Default: Welcome to The Docs!")= data.organization.statement
+                    br
+                    input(type="hidden" name="type" value="general")
+                    br
+                    br
+                    h3 Slack
+                    a(href="https://slack.com/oauth/authorize?client_id=361813688245.362569754774&scope=incoming-webhook")
+                        img(alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x")
+                    button Save
         content(id="MySQL")
-            h1.title MySQL Configuration
-            hr
-            form
-                label Host:
-                input(placeholder = "Please enter a host address!" name="host" value=data.mysql.settings.host)
-                br
-                label Schema:
-                input(placeholder = "Please enter a schema!" name="database" value=data.mysql.settings.database)
-                br
-                label Username:
-                input(placeholder = "Please enter a username!" name="username" value=data.mysql.settings.user autocomplete='username')
-                br
-                label Password:
-                br
-                input(type="password" name="password" placeholder = "Password" autocomplete='new-password')
-                br
-                input(type="password" name="confirm_password" placeholder = "Confirm Password" autocomplete='new-password')
-                br
-                input(type="hidden" name="type" value="mysql")
-                button Save and Connect
+            span
+                h1.title MySQL Configuration
+                hr
+
+                if message.code > 0
+                    span(style="display: block; color: #1f1; text-align: center;") message.text
+                else if message.code < 0
+                    span(style="display: block; color: #f11; text-align: center;") message.text
+
+                form(method="POST" action="")
+                    label Host:
+                    input(placeholder = "Please enter a host address!" name="host" value=data.mysql.settings.host)
+                    br
+                    label Schema:
+                    input(placeholder = "Please enter a schema!" name="database" value=data.mysql.settings.database)
+                    br
+                    label Username:
+                    input(placeholder = "Please enter a username!" name="username" value=data.mysql.settings.user autocomplete='username')
+                    br
+                    label Change Password:
+                    br
+                    input(type="password" name="password" placeholder = "Password" autocomplete='new-password')
+                    br
+                    input(type="password" name="confirm_password" placeholder = "Confirm Password" autocomplete='new-password')
+                    br
+                    input(type="hidden" name="type" value="mysql")
+                    button Save and Connect
         script(src="/js/pageViewer.js")

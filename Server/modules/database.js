@@ -2,7 +2,7 @@
 
 var bcrypt = require('bcrypt');
 var mysql = require('mysql');
-var settings = require("../config.json");
+var store = require('../modules/store');
 
 // Recurcively Test user
 const loginTest = (username, password, users, seek) => {
@@ -23,11 +23,11 @@ const loginTest = (username, password, users, seek) => {
     } else {
         return { err: 'There is no user named ' + username + '!' };
     }
-}
+};
 
 class database {
     constructor() {
-        this.data = settings.mysql;
+        this.data = store.get("mysql");
         this.isConnected = false;
         this.db;
     }
@@ -54,7 +54,7 @@ class database {
             }
 
             self.db.on('error', function (err) {
-                console.log('MySQL Error: ', err);
+                console.log('MySQL Error: ', err.message);
                 if (err.code === 'PROTOCOL_CONNECTION_LOST') {
                     self.isConnected = false;
                     self.connect();
@@ -62,6 +62,17 @@ class database {
                     throw err;
                 }
             });
+        });
+    }
+
+    restart() {
+        this.db.end((err) => {
+            if (err) console.error(err.message);
+
+            console.log("\nRestarting database connection!\n");
+
+            this.data = store.get("mysql");
+            this.connect();
         });
     }
 
@@ -128,7 +139,7 @@ class database {
         let db = this.db;
         this.db.query("SELECT * FROM users", function (err, result) {
             if (err) throw err;
-            if (settings.code !== profile.code) {
+            if (store.get("code") !== profile.code) {
                 return callback({
                     "err": "Invailid Registration Code!"
                 });
@@ -152,13 +163,13 @@ class database {
                 let token = "";
 
                 for (let i = 0; i < profile.password.length; i++) {
-                    passHash += (profile.password.charCodeAt(i));
+                    passHash += profile.password.charCodeAt(i);
                 }
 
                 divide = Math.ceil(passHash / 21);
 
                 while (passHash > divide) {
-                    let letter = String.fromCharCode(48 + (passHash % 74));
+                    let letter = String.fromCharCode(48 + passHash % 74);
                     token += letter;
                     passHash -= divide;
                 }
@@ -168,14 +179,17 @@ class database {
                 // Save user to database
 
                 bcrypt.hash(profile.password, 10, function (err, hash) {
-                    db.query("INSERT INTO users (name_first, name_last, username, email, password, token) VALUES ('" + profile.name_first + "', '" + profile.name_last + "', '" + profile.username + "', '" + profile.email + "', '" + hash + "', '" + token + "' )");
-                });
+                    db.query("INSERT INTO users (name_first, name_last, username, email, password, token) VALUES ('" + profile.name_first + "', '" + profile.name_last + "', '" + profile.username + "', '" + profile.email + "', '" + hash + "', '" + token + "' )", (err, rows, field) => {
+                        let id = rows.insertId;
 
-                profile.token = token;
+                        profile.token = token;
+                        profile.id = id;
 
-                return callback({
-                    "result": profile,
-                    "err": ""
+                        return callback({
+                            "result": profile,
+                            "err": ""
+                        });
+                    });
                 });
             }
         });
@@ -183,7 +197,7 @@ class database {
 
     // Use this function to validate if the user is logged in/is the current user
     async checkUser(profile) {
-        // profile must include: id, user( name|| email ) and token.
+        // profile must include: id, user( name || email ) and token.
         return new Promise(callback => {
             profile = profile.user;
             this.db.query("SELECT * FROM users WHERE id=" + profile.id, function (err, rows, fields) {
@@ -236,7 +250,7 @@ class database {
                                     let respond = {
                                         err: false,
                                         result: data
-                                    }
+                                    };
                                     callback(respond);
                                 }
                             });
@@ -245,7 +259,7 @@ class database {
                         let respond = {
                             err: false,
                             result: data
-                        }
+                        };
                         callback(respond);
                     }
                 });
@@ -264,8 +278,9 @@ class database {
 
         db.query("INSERT INTO documents SET ?", doc, function (err, results, fields) {
             if (err) {
+                console.log(err);
                 return callback({
-                    'err': err
+                    'err': err.message
                 });
             } else {
                 // Get id of inserted item
@@ -280,8 +295,9 @@ class database {
                 // Next store keywords
                 db.query("INSERT INTO keywords (keyword, doc_id) VALUES ?", [keys], function (err, result) {
                     if (err) {
+                        console.log(err);
                         return callback({
-                            'err': err
+                            'err': err.message
                         });
                     } else {
                         // return doc id if all goes well.
@@ -304,8 +320,9 @@ class database {
 
             this.db.query("insert into projects SET ?", project, function (err, result) {
                 if (err) {
+                    console.log(err);
                     return callback({
-                        'err': err
+                        'err': err.message
                     });
                 } else {
                     return callback(false, { 'id': result.insertId });
@@ -314,8 +331,9 @@ class database {
         } else {
             this.db.query("insert into projects (name) values ('" + name + "' )", function (err, result) {
                 if (err) {
+                    console.log(err);
                     return callback({
-                        'err': err
+                        'err': err.message
                     });
                 } else {
                     return callback(false, { 'id': result.insertId });
@@ -328,8 +346,9 @@ class database {
     createJournal(journals, callback) {
         this.db.query("insert into journals (user_id, project_id, description) values ? ", [journals], function (err, result) {
             if (err) {
+                console.log(err);
                 return callback({
-                    'err': err
+                    'err': err.message
                 });
             } else {
                 return callback(false, { 'id': result.insertId });
@@ -463,21 +482,29 @@ class database {
             let docs, journals, d, p;
             switch (type) {
                 case "user":
-                    // Grab Documents for user
+                    // Grab Documents and journals by user
                     this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE user_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
-                        return callback(rows);
+                        if (err) {
+                            return callback(err);
+                        } else {
+                            return callback(rows);
+                        }
                     });
 
                     break;
                 case "project":
-                    // Grab documents and journals for project by id
+                    // Grab documents and journals by project
                     this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE project_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
-                        return callback(rows);
+                        if (err) {
+                            return callback(err);
+                        } else {
+                            return callback(rows);
+                        }
                     });
                     break;
-                case "test":
-                    // Grab documents and journals for project by id with username instead of id
-                    this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE project_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
+                case "activity":
+                    // Grab documents and journals for all users
+                    this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
                         if (err) {
                             return callback(err);
                         } else {

@@ -15,8 +15,7 @@ const cssMD = path.join(__dirname, '/public/css/markdown.css');
 const img = path.join(__dirname, '/public/image/TheDocsLogoNew_White.svg');
 
 // Settings
-const settings = require("./config.json");
-const port = settings.port;
+const port = store.get("port");
 
 //MySQL Setup
 const db = require('./modules/database.js');
@@ -31,9 +30,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Verify a connection
 app.post('/', function (req, res) {
     res.send({
-        'url': settings.url,
-        'host': settings.host,
-        'organization': settings.organization,
+        'url': store.get("url"),
+        'host': store.get("host"),
+        'organization': store.get("organization"),
         'check': true
     });
 });
@@ -156,10 +155,12 @@ app.get('/log/:type/:id', (req, res) => {
     let info, data, log;
     if (req.params.type === "user") {
         info = db.getUserAsync(req.params.id).then((user) => { data = user; });
-    } else {
+    } else if (req.params.type === "project") {
         info = db.getProjectAsync(req.params.id).then((project) => { data = project; });
+    } else {
+        data = req.params.type;
     }
-    let logs = db.getLog(req.params.type, req.params.id, 0).then((events) => {
+    let logs = db.getLog(req.params.type, req.params.id || null, 0).then((events) => {
         log = events;
     });
     Promise.all([info, logs]).then(() => {
@@ -178,7 +179,15 @@ app.get('/log/:type/:id/:offset', function (req, res) {
 // END OF LOGS
 
 app.get('/admin', (req, res) => {
-    if (!settings.firstTime) {
+
+    // code == 0 -> nothing; code == 1 -> success; code == -1 -> error;
+    let message = {
+        code: 0,
+        text: "",
+        form: ""
+    };
+
+    if (!store.get("firstTime")) {
         let users;
         let mysql = store.get("mysql");
         let org = store.get("organization");
@@ -190,11 +199,12 @@ app.get('/admin', (req, res) => {
         Promise.all([p]).then(() => {
             res.render('admin', {
                 user: 'Test User',
+                message: message,
                 data: {
-                    port: settings.port,
-                    url: settings.url,
-                    host: settings.host,
-                    code: settings.code,
+                    port: store.get("port"),
+                    url: store.get("url"),
+                    host: store.get("host"),
+                    code: store.get("code"),
                     mysql: {
                         connection: db.isConnected,
                         users: db.isConnected ? users : 'N/A',
@@ -217,18 +227,66 @@ app.get('/admin', (req, res) => {
 });
 
 app.post('/admin', (req, res) => {
-    let users;
+    let form = req.body;
+
+    // code == 0 -> nothing; code == 1 -> success; code == -1 -> error;
+    let message = {
+        code: 0,
+        text: "",
+        form: form.type
+    };
+    
     let mysql = store.get("mysql");
+    let org = store.get("organization");
+
+    let config = new Promise(callback => {
+        console.log("Form data:" + JSON.stringify(req.body));
+        switch (form.type) {
+            case "general":
+                callback();
+                break;
+            case "mysql":
+                console.log("in mysql config handler");
+                // testing passwords
+                if (form.password !== "" && form.password === form.confirm_password) {
+                    mysql.password = form.password;
+                } else if (form.password !== "") {
+                    message.code = -1;
+                    message.text = "Passwords do not match!";
+                }
+                mysql.host = form.host;
+                mysql.database = form.database;
+                mysql.user = form.username;
+                if (message.code === 0) {
+                    message.code = 1;
+                    message.text = "New configuration has been saved!\nRestarting database connection.";
+                    console.log("Restart database");
+                    db.restart();
+                }
+                callback();
+                break;
+            default:
+                callback();
+                break;
+        }
+    });
+
+    let users;
 
     let p = db.getNumUsers().then(data => {
         users = data;
     });
 
-    Promise.all([p]).then(() => {
-        res.render(admin, {
+    Promise.all([p, config]).then(() => {
+        console.log("return data");
+        res.render('admin', {
             user: 'Test User',
+            message: message,
             data: {
-                port: settings.port,
+                port: store.get("port"),
+                url: store.get("url"),
+                host: store.get("host"),
+                code: store.get("code"),
                 mysql: {
                     connection: db.isConnected,
                     users: db.isConnected ? users : 'N/A',
@@ -237,6 +295,10 @@ app.post('/admin', (req, res) => {
                         database: db.isConnected ? mysql.database : 'N/A',
                         user: db.isConnected ? mysql.user : 'N/A'
                     }
+                },
+                organization: {
+                    name: org.name,
+                    statement: org.statement
                 }
             }
         });
@@ -246,7 +308,7 @@ app.post('/admin', (req, res) => {
 app.listen(port, function () {
     console.log('TheDocs Server running on ' + port + '!');
 
-    if (settings.firstTime === true) {
+    if (store.get("firstTime") === true) {
         console.log('');
         console.log('Please go to http://localhost:' + port + '/admin to setup the server!');
         console.log('');

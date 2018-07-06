@@ -184,47 +184,55 @@ content {
     display: none;
     position: absolute;
     top: 3em;
-    right: 0;
-    width: calc(100% - 270px - 40%);
-    padding: 5% 20%;
+    left: 250px;
+    width: calc(100% - 250px);
     background-color: #fff;
     color: #555;
+    text-align: center;
+    padding: 5% 0;
 }
 
-content>form {
-    width: calc(100% - 40px);
-    padding: 10px;
-    margin: 10px;
-}
+    content > span {
+        display: inline-block;
+        min-width: 500px;
+        width: 50%;
+        text-align: left;
+    }
 
-content > form > input, content > form > textarea {
-    font-size: small;
-    min-width: calc(50% - 15px - 2em);
-    width: calc(50% - 15px - 2em);
-    max-width: calc(50% - 15px - 2em);
-    padding: 5px;
-    vertical-align: text-top;
-    margin: 3px 0 3px 2em;
-    border: 1px solid rgba(0,0,0,.15);
-    box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
-    min-height: calc(1em + 16px);
-}
+    content > span > form {
+        width: calc(100% - 40px);
+        padding: 10px;
+        margin: 10px;
+    }
 
-content>form>label {
-    display: inline-block;
-    min-width: 200px;
-    width: 50%;
-    max-width: calc(50% - 16px);
-    padding: 5px;
-    margin: 3px;
-}
+        content > span > form > input, content > span > form > textarea {
+            font-size: small;
+            min-width: calc(50% - 15px - 2em);
+            width: calc(50% - 15px - 2em);
+            max-width: calc(50% - 15px - 2em);
+            padding: 5px;
+            vertical-align: text-top;
+            margin: 3px 0 3px 2em;
+            border: 1px solid rgba(0,0,0,.15);
+            box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+            min-height: calc(1em + 16px);
+        }
 
-content>form>button {
-    padding: 5px 10px;
-    float: right;
-    margin: 10px 16px;
-    background-color: #ddd;
-}
+        content > span > form > label {
+            display: inline-block;
+            min-width: 200px;
+            width: 50%;
+            max-width: calc(50% - 16px);
+            padding: 5px;
+            margin: 3px;
+        }
+
+        content > span > form > button {
+            padding: 5px 10px;
+            float: right;
+            margin: 10px 16px;
+            background-color: #ddd;
+        }
 
 .title {
     /* padding-left: 20px; */
