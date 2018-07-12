@@ -291,7 +291,7 @@ class database {
         this.checkUser(profile).then(check => {
             if (check) {
                 let self = this;
-                this.db.query("SELECT id, project_id, description, created, completed FROM todo WHERE user_id =" + profile.user.id + " AND (DATE(completed) = DATE(current_timestamp) OR completed IS NULL) ORDER BY created", function (err, rows, fields) {
+                this.db.query("SELECT id, project_id, description, created, completed FROM todo WHERE user_id =" + profile.user.id + " AND (DATE(completed) = DATE(current_timestamp) OR `completed` IS NULL) ORDER BY created", function (err, rows, fields) {
                     if (err) throw err;
                     let data = {
                         'user': profile,
@@ -346,7 +346,7 @@ class database {
     updateTodo(profile, item, callback) {
         this.checkUser(profile).then(check => {
             if (check) {
-                this.db.query("UPDATE `todo` SET `is_done`='" + item.is_done + "' WHERE `id`='" + item.id + "'", (err, rows, fields) => {
+                this.db.query("UPDATE `todo` SET `completed`=" + (item.is_done ? "CURRENT_TIMESTAMP" : null) + " WHERE `id`='" + item.id + "'", (err, rows, fields) => {
                     if (!err) {
                         callback({
                             err: false,
@@ -403,6 +403,40 @@ class database {
         });
     }
 
+    // leave a project
+    leaveProject(profile, projectId, callback) {
+        this.checkUser(profile).then(check => {
+            if (check) {
+                this.hasJoinedProject(profile, projectId, joined => {
+                    if (joined || joined >= 0) {
+                        this.db.query("UPDATE joined_project SET `left` = CURRENT_TIMESTAMP WHERE id = '" + joined + "'", function (err, rows, fields) {
+                            if (!err) {
+                                callback({
+                                    err: false,
+                                    result: {
+                                        'user': profile,
+                                        'hasJoined': false
+                                    }
+                                });
+                            } else {
+                                let respond = {
+                                    err: {
+                                        message: err.message
+                                    }
+                                };
+                                callback(respond);
+                            }
+                        });
+                    } else {
+                        callback({ err: 'You are not part of this project!' });
+                    }
+                });
+            } else {
+                callback({ err: "You're not logged in!" });
+            }
+        });
+    }
+
     // check if uesr is part of a project
     hasJoinedProject(profile, projectId, callback) {
         this.checkUser(profile).then(check => {
@@ -411,7 +445,7 @@ class database {
                     if (err) throw err;
 
                     if (rows.length > 0) {
-                        callback(true);
+                        callback(rows[0].id);
                     } else {
                         callback(false);
                     }
@@ -426,7 +460,7 @@ class database {
     getJoinedProjects(profile, callback) {
         this.checkUser(profile).then(check => {
             if (check) {
-                this.db.query("SELECT joined_project.*, projects.name FROM joined_project LEFT JOIN (SELECT * FROM projects) AS projects ON projects.id = joined_project.project_id WHERE user_id = '" + profile.user.id + "' AND 'left' IS NOT NULL", function (err, rows, fields) {
+                this.db.query("SELECT joined_project.*, projects.name FROM joined_project LEFT JOIN (SELECT * FROM projects) AS projects ON projects.id = joined_project.project_id WHERE user_id = '" + profile.user.id + "' AND `left` IS NULL", function (err, rows, fields) {
                     if (!err) {
                         callback({
                             err: false,
@@ -681,6 +715,7 @@ class database {
             this.checkUser(profile).then(check => {
                 if (check) {
                     let docs, journals, d, p;
+                    let self = this;
                     switch (type) {
                         case "user":
                             // Grab Documents and journals by user
@@ -704,12 +739,29 @@ class database {
                             });
                             break;
                         case "activity":
-                            // Grab documents and journals for all users
-                            this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
-                                if (err) {
-                                    return callback(err);
-                                } else {
-                                    return callback(rows);
+                            // Get the project the user is a part of.
+                            this.getJoinedProjects(profile, projects => {
+                                projects = projects.result.projects;
+                                let where = "";
+
+                                for (let i = 0; i < projects.length; i++) {
+                                    if (i === 0) {
+                                        where += "project_id = " + projects[i].project_id;
+                                    } else {
+                                        where += " OR project_id = " + projects[i].project_id;
+                                    }
+
+                                    if (i === projects.length - 1) {
+
+                                        // Grab documents and journals for all users
+                                        self.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE (" + where + ") ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
+                                            if (err) {
+                                                return callback(err);
+                                            } else {
+                                                return callback(rows);
+                                            }
+                                        });
+                                    }
                                 }
                             });
                             break;

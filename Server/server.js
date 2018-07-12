@@ -172,6 +172,14 @@ app.post('/project/join/:id', (req, res) => {
     });
 });
 
+app.post('/project/leave/:id', (req, res) => {
+    let profile = req.body;
+
+    db.leaveProject(profile, req.params.id, data => {
+        res.json(data);
+    });
+});
+
 // Get a doc by it's ID
 app.post('/doc', function (req, res) {
     let post = req.body;
