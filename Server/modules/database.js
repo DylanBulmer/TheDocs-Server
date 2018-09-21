@@ -285,25 +285,48 @@ class database {
         });
     }
 
-    // Grab To-Do list for user.
-    getTodo(profile, callback) {
+    /** 
+     * @description Grab To-Do list for user or project.
+     * @param {JSON} profile User profile
+     * @param {JSON} opts Options for getting TODO list { type: string, id: number }.
+     * @param {Function} callback Callback function
+     */
+    getTodo(profile, opts, callback) {
 
         this.checkUser(profile).then(check => {
             if (check) {
                 let self = this;
-                this.db.query("SELECT id, project_id, description, created, completed FROM todo WHERE user_id =" + profile.user.id + " AND (DATE(completed) = DATE(current_timestamp) OR `completed` IS NULL) ORDER BY created", function (err, rows, fields) {
-                    if (err) throw err;
-                    let data = {
-                        'user': profile,
-                        'list': rows
-                    };
+                switch (opts.type) {
+                    case 'user':
+                        this.db.query("SELECT id, project_id, description, created, completed FROM todo WHERE user_id =" + profile.user.id + " AND (DATE(completed) = DATE(current_timestamp) OR `completed` IS NULL) ORDER BY created", function (err, rows, fields) {
+                            if (err) throw err;
+                            let data = {
+                                'user': profile,
+                                'list': rows
+                            };
 
-                    let respond = {
-                        err: false,
-                        result: data
-                    };
-                    callback(respond);
-                });
+                            let respond = {
+                                err: false,
+                                result: data
+                            };
+                            callback(respond);
+                        });
+                        break;
+                    case 'project':
+                        this.db.query("SELECT id, project_id, description, created, completed FROM todo WHERE project_id =" + opts.id + " AND (DATE(completed) = DATE(current_timestamp) OR `completed` IS NULL) ORDER BY created", function (err, rows, fields) {
+                            if (err) throw err;
+                            let data = {
+                                'user': profile,
+                                'list': rows
+                            };
+
+                            let respond = {
+                                err: false,
+                                result: data
+                            };
+                            callback(respond);
+                        });
+                }
             } else {
                 callback({ err: "You're not logged in!" });
             }
@@ -689,6 +712,75 @@ class database {
         });
     }
 
+    /**
+     * 
+     * @param {JSON} profile User's profile
+     * @param {Date} date Date to find journals for
+     * @param {Function} callback Callback function
+     */
+    getJournalsFromDate(profile, date, callback) {
+        let journals = [];
+        this.db.query("SELECT daily_journals.id, daily_journals.user_id, daily_journals.project_id, daily_journals.description, daily_journals.completed, users.name_first, users.name_last, projects.name AS project_name FROM(SELECT *, NULL AS completed FROM journals WHERE DATE(journals.created) = DATE('" + date.toISOString() + "') UNION SELECT * FROM todo WHERE DATE(todo.completed) = DATE('" + date.toISOString() + "')) AS daily_journals LEFT JOIN(SELECT * FROM users) AS users ON users.id = daily_journals.user_id LEFT JOIN(SELECT * FROM projects) AS projects ON projects.id = daily_journals.project_id;", (err, rows, feilds) => {
+
+            if (err) console.error(err);
+            else {
+                let journals = [];
+                for (let i = 0; i < rows.length; i++) {
+                    if (journals.length === 0) {
+                        let data = {
+                            'name': rows[i].name_first + " " + rows[i].name_last,
+                            'userId': rows[i].user_id,
+                            'todo': [],
+                            'documents': [],
+                            'other': []
+                        };
+
+                        if (rows[i].completed !== null) {
+                            data.todo.push({
+                                'project': rows[i].project_name,
+                                'projectId': rows[i].project_id,
+                                'id': rows[i].id,
+                                'description': rows[i].description
+                            });
+                        } else {
+                            data.other.push({
+                                'project': rows[i].project_name,
+                                'projectId': rows[i].project_id,
+                                'id': rows[i].id,
+                                'description': rows[i].description
+                            });
+                        }
+
+                        journals.push(data);
+                    } else {
+                        for (let j = 0; j < journals.length; j++) {
+                            if (journals[i].userId === rows[i].user_id) {
+                                if (rows[i].completed !== null) {
+                                    journals[j].todo.push({
+                                        'project': rows[i].project_name,
+                                        'projectId': rows[i].project_id,
+                                        'id': rows[i].id,
+                                        'description': rows[i].description
+                                    });
+                                } else {
+                                    journals[j].other.push({
+                                        'project': rows[i].project_name,
+                                        'projectId': rows[i].project_id,
+                                        'id': rows[i].id,
+                                        'description': rows[i].description
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                callback(journals);
+            }
+
+        });
+    }
+
     async getNumUsers() {
         return new Promise(resolve => {
             if (this.isConnected) {
@@ -703,10 +795,10 @@ class database {
 
     /**
      * @returns {Function} callback will be returned 
+     * @param {JSON} profile User's profile (username and access token)
      * @param {String} type Type of log to grab
      * @param {Number} id ID should be a number
      * @param {Number} offset Increment by one to get 25 more logs
-     * @param {Function} callback Callback the log with a function
      */
     async getLog(profile, type, id, offset) {
 

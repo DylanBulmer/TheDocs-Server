@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 'use strict';
 
 const express = require('express');
@@ -63,8 +65,8 @@ app.post('/search', function (req, res) {
 
 // Get todo list
 app.post('/todo', function (req, res) {
-    let profile = req.body;
-    db.getTodo(profile, function (data) {
+    let body = req.body;
+    db.getTodo(body.profile, body.opts, function (data) {
         res.json(data);
     });
 });
@@ -199,6 +201,21 @@ app.post('/journal', (req, res) => {
         } else {
             console.log(result);
             res.send(true);
+        }
+    });
+});
+
+// POST journal
+app.get('/journals/:date', (req, res) => {
+    // The post request must be an array of arrays
+    // Ex: [ [ user_id, project_id, description ], [ ... ] ]
+    db.getJournalsFromDate(req.body, new Date(req.params.date), (err, result) => {
+        if (err) {
+            console.error(err);
+            res.send(err);
+        } else {
+            console.log(result);
+            res.send(result);
         }
     });
 });
