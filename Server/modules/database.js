@@ -721,7 +721,7 @@ class database {
      * @param {Function} callback Callback function
      */
     getJournalsFromDate(profile, date, callback) {
-        this.db.query("SELECT daily_journals.id, daily_journals.user_id, daily_journals.description, daily_journals.completed, users.name_first, users.name_last, projects.name AS project_name FROM(SELECT *, NULL AS completed FROM journals WHERE DATE(journals.created) = DATE('" + date.toISOString() + "') UNION SELECT * FROM todo WHERE DATE(todo.completed) = DATE('" + date.toISOString() + "')) AS daily_journals LEFT JOIN(SELECT * FROM users) AS users ON users.id = daily_journals.user_id;", (err, rows, feilds) => {
+        this.db.query("SELECT daily_journals.id, daily_journals.user_id, daily_journals.description, daily_journals.completed, users.name_first, users.name_last FROM(SELECT *, NULL AS completed FROM journals WHERE DATE(journals.created) = DATE('" + date.toISOString() + "') UNION SELECT * FROM todo WHERE DATE(todo.completed) = DATE('" + date.toISOString() + "')) AS daily_journals LEFT JOIN(SELECT * FROM users) AS users ON users.id = daily_journals.user_id;", (err, rows, feilds) => {
 
             if (err) console.error(err);
             else {
