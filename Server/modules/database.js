@@ -504,6 +504,8 @@ class database {
             } else {
                 callback({ err: "You're not logged in!" });
             }
+        }).catch((e) => {
+            console.log(e);
         });
     }
 
@@ -582,7 +584,7 @@ class database {
 
     // create a new journal
     createJournal(journals, callback) {
-        this.db.query("insert into journals (user_id, project_id, description) values ? ", [journals], function (err, result) {
+        this.db.query("insert into journals (user_id, description) values ? ", [journals], function (err, result) {
             if (err) {
                 console.log(err);
                 return callback({
@@ -719,8 +721,7 @@ class database {
      * @param {Function} callback Callback function
      */
     getJournalsFromDate(profile, date, callback) {
-        let journals = [];
-        this.db.query("SELECT daily_journals.id, daily_journals.user_id, daily_journals.project_id, daily_journals.description, daily_journals.completed, users.name_first, users.name_last, projects.name AS project_name FROM(SELECT *, NULL AS completed FROM journals WHERE DATE(journals.created) = DATE('" + date.toISOString() + "') UNION SELECT * FROM todo WHERE DATE(todo.completed) = DATE('" + date.toISOString() + "')) AS daily_journals LEFT JOIN(SELECT * FROM users) AS users ON users.id = daily_journals.user_id LEFT JOIN(SELECT * FROM projects) AS projects ON projects.id = daily_journals.project_id;", (err, rows, feilds) => {
+        this.db.query("SELECT daily_journals.id, daily_journals.user_id, daily_journals.description, daily_journals.completed, users.name_first, users.name_last, projects.name AS project_name FROM(SELECT *, NULL AS completed FROM journals WHERE DATE(journals.created) = DATE('" + date.toISOString() + "') UNION SELECT * FROM todo WHERE DATE(todo.completed) = DATE('" + date.toISOString() + "')) AS daily_journals LEFT JOIN(SELECT * FROM users) AS users ON users.id = daily_journals.user_id;", (err, rows, feilds) => {
 
             if (err) console.error(err);
             else {
@@ -731,7 +732,7 @@ class database {
                             'name': rows[i].name_first + " " + rows[i].name_last,
                             'userId': rows[i].user_id,
                             'todo': [],
-                            'documents': [],
+                            'document': [],
                             'other': []
                         };
 
@@ -754,18 +755,16 @@ class database {
                         journals.push(data);
                     } else {
                         for (let j = 0; j < journals.length; j++) {
-                            if (journals[i].userId === rows[i].user_id) {
+                            if (journals[j].userId === rows[i].user_id) {
                                 if (rows[i].completed !== null) {
                                     journals[j].todo.push({
                                         'project': rows[i].project_name,
-                                        'projectId': rows[i].project_id,
                                         'id': rows[i].id,
                                         'description': rows[i].description
                                     });
                                 } else {
                                     journals[j].other.push({
                                         'project': rows[i].project_name,
-                                        'projectId': rows[i].project_id,
                                         'id': rows[i].id,
                                         'description': rows[i].description
                                     });

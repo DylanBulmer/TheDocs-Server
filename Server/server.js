@@ -159,7 +159,7 @@ app.get('/projects', function (req, res) {
 });
 
 app.post('/projects/current', (req, res) => {
-    let profile = req.body.profile;
+    let profile = req.body;
 
     db.getJoinedProjects(profile, data => {
         res.json(data);
