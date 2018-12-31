@@ -63,6 +63,36 @@ app.post('/search', function (req, res) {
     });
 });
 
+// Get todo list
+app.post('/todo', function (req, res) {
+    let body = req.body;
+    db.getTodo(body.profile, body.opts, function (data) {
+        res.json(data);
+    });
+});
+
+// Add to todo list
+app.post('/todo/new', function (req, res) {
+    let profile = req.body.profile;
+    let item = req.body.item;
+
+    db.newTodo(profile, item, function (data) {
+        res.json(data);
+    });
+
+});
+
+// update todo list
+app.post('/todo/update', function (req, res) {
+    let profile = req.body.profile;
+    let item = req.body.item;
+
+    db.updateTodo(profile, item, function (data) {
+        res.json(data);
+    });
+
+});
+
 // Create a new doc
 app.post('/new', function (req, res) {
     let doc = req.body;
@@ -128,10 +158,34 @@ app.get('/projects', function (req, res) {
     });
 });
 
+app.post('/projects/current', (req, res) => {
+    let profile = req.body;
+
+    db.getJoinedProjects(profile, data => {
+        res.json(data);
+    });
+});
+
+app.post('/project/join/:id', (req, res) => {
+    let profile = req.body;
+
+    db.joinProject(profile, req.params.id, data => {
+        res.json(data);
+    });
+});
+
+app.post('/project/leave/:id', (req, res) => {
+    let profile = req.body;
+
+    db.leaveProject(profile, req.params.id, data => {
+        res.json(data);
+    });
+});
+
 // Get a doc by it's ID
 app.post('/doc', function (req, res) {
     let post = req.body;
-    db.getDoc(post.id, function (doc) {
+    db.getDoc(post.profile, post.id, function (doc) {
         res.json(doc);
     });
 });
@@ -151,18 +205,35 @@ app.post('/journal', (req, res) => {
     });
 });
 
+// POST journal
+app.get('/journals/:date', (req, res) => {
+    // The post request must be an array of arrays
+    // Ex: [ [ user_id, project_id, description ], [ ... ] ]
+    db.getJournalsFromDate(req.body, new Date(req.params.date), (err, result) => {
+        if (err) {
+            console.error(err);
+            res.send(err);
+        } else {
+            console.log(result);
+            res.send(result);
+        }
+    });
+});
+
 // Get a log
 // PRE: Send in account info to gain access
-app.get('/log/:type/:id', (req, res) => {
+app.post('/log/:type/:id', (req, res) => {
+    let profile = req.body;
+
     let info, data, log;
     if (req.params.type === "user") {
         info = db.getUserAsync(req.params.id).then((user) => { data = user; });
     } else if (req.params.type === "project") {
-        info = db.getProjectAsync(req.params.id).then((project) => { data = project; });
+        info = db.getProjectAsync(profile, req.params.id).then((project) => { data = project; });
     } else {
         data = req.params.type;
     }
-    let logs = db.getLog(req.params.type, req.params.id || null, 0).then((events) => {
+    let logs = db.getLog(profile, req.params.type, req.params.id || null, 0).then((events) => {
         log = events;
     });
     Promise.all([info, logs]).then(() => {
@@ -173,9 +244,25 @@ app.get('/log/:type/:id', (req, res) => {
     });
 });
 
-app.get('/log/:type/:id/:offset', function (req, res) {
-    db.getLog(req.params.type, req.params.id, req.params.offset, function (events) {
-        return res.json(events);
+app.post('/log/:type/:id/:offset', function (req, res) {
+    let profile = req.body;
+
+    let info, data, log;
+    if (req.params.type === "user") {
+        info = db.getUserAsync(req.params.id).then((user) => { data = user; });
+    } else if (req.params.type === "project") {
+        info = db.getProjectAsync(req.params.id).then((project) => { data = project; });
+    } else {
+        data = req.params.type;
+    }
+    let logs = db.getLog(profile, req.params.type, req.params.id || null, 0).then((events) => {
+        log = events;
+    });
+    Promise.all([info, logs]).then(() => {
+        return res.json({
+            "info": data,
+            "logs": log
+        });
     });
 });
 // END OF LOGS
