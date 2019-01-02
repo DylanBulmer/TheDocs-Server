@@ -8,7 +8,8 @@ const bcrypt = require('bcrypt');
 const mysql = require('mysql');
 const path = require('path');
 const pug = require('pug');
-const store = require('./modules/store.js');
+const Store = require('./modules/store.js');
+const store = new Store();
 
 // Require Web views and sources to get packaged
 const admin = path.join(__dirname, '/views/admin.pug');
@@ -25,6 +26,7 @@ const db = require('./modules/database.js');
 // Make the server use things
 const app = express();
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 app.use(express.static(path.join(__dirname, 'public')));
@@ -317,6 +319,7 @@ app.get('/admin', (req, res) => {
 
 app.post('/admin', (req, res) => {
     let form = req.body;
+    console.log("Req Data:" + JSON.stringify(req.accepts));
 
     // code == 0 -> nothing; code == 1 -> success; code == -1 -> error;
     let message = {
@@ -329,9 +332,22 @@ app.post('/admin', (req, res) => {
     let org = store.get("organization");
 
     let config = new Promise(callback => {
-        console.log("Form data:" + JSON.stringify(req.body));
+        console.log("Form data:" + JSON.stringify(form), "Org data:" + JSON.stringify(form["org[name]"]));
         switch (form.type) {
             case "general":
+
+                console.log("Saving general config.");
+
+                store.set("port", form.port);
+                store.set("url", form.url);
+                store.set("host", form.host);
+                store.set("code", form.code);
+                org.name = form["org[name]"];
+                org.statement = form["org[statement]"];
+                store.set("organization", org);
+
+                console.log("Saved new configuration");
+
                 callback();
                 break;
             case "mysql":
@@ -350,9 +366,12 @@ app.post('/admin', (req, res) => {
                     message.code = 1;
                     message.text = "New configuration has been saved!\nRestarting database connection.";
                     console.log("Restart database");
-                    db.restart();
+                    db.restart().then(result => {
+                        callback();
+                    });
+                } else {
+                    callback();
                 }
-                callback();
                 break;
             default:
                 callback();

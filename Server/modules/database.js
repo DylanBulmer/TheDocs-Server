@@ -2,7 +2,8 @@
 
 var bcrypt = require('bcrypt');
 var mysql = require('mysql');
-var store = require('../modules/store');
+var Store = require('../modules/store');
+var store = new Store();
 
 // Recurcively Test user
 const loginTest = (username, password, users, seek) => {
@@ -65,14 +66,20 @@ class database {
         });
     }
 
-    restart() {
-        this.db.end((err) => {
-            if (err) console.error(err.message);
+    async restart() {
+        return new Promise(resolve => {
+            this.db.end((err) => {
+                if (err) console.error(err.message);
 
-            console.log("\nRestarting database connection!\n");
+                this.isConnected = false;
 
-            this.data = store.get("mysql");
-            this.connect();
+                console.log("\nRestarting database connection!\n");
+
+                this.data = store.get("mysql");
+                this.connect();
+
+                resolve(true);
+            });
         });
     }
 
@@ -781,15 +788,25 @@ class database {
     }
 
     async getNumUsers() {
-        return new Promise(resolve => {
-            if (this.isConnected) {
-                this.db.query("SELECT id FROM users", function (err, rows, fields) {
-                    resolve(rows.length);
-                });
-            } else {
-                resolve(0);
-            }
-        });
+        if (this.isConnected) {
+            return new Promise(resolve => {
+                if (this.isConnected) {
+                    this.db.query("SELECT id FROM users", function (err, rows, fields) {
+                        if (rows) {
+                            resolve(rows.length);
+                        } else {
+                            resolve(-1);
+                        }
+                    });
+                } else {
+                    resolve(0);
+                }
+            });
+        } else {
+            return new Promise(resolve => {
+                resolve(-1);
+            });
+        }
     }
 
     /**

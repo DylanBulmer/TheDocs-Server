@@ -32,35 +32,35 @@ html
             span
                 h1.title General Configuration
                 hr
-                form(method="POST")
+                form(method="POST" action="/admin" enctype="application/json; charset=UTF-8")
                     h3 Settings
                     label Port
-                    input(placeholder = "Default: 1337" name="port" value=data.port)
+                    input(placeholder = "Default: 1337" name="port" value=data.port autocomplete="off")
                     br
                     label Hosting Address (IPv4)
-                    input(placeholder = "Default: 127.0.0.1" name="url" value=data.url)
+                    input(placeholder = "Default: 127.0.0.1" name="url" value=data.url autocomplete="off")
                     br
                     label Hosting Domain
-                    input(placeholder = "Default: localhost" name="host" value=data.host)
+                    input(placeholder = "Default: localhost" name="host" value=data.host autocomplete="off")
                     br
                     label Registation Code
-                    input(placeholder = "Default: 1234" name="code" value=data.code)
+                    input(placeholder = "Default: 1234" name="code" value=data.code autocomplete="off")
                     br
                     br
                     h3 Organization Settings
                     label Name
-                    input(placeholder = "Default: None" name="org[name]" value=data.organization.name autocomplete='organization')
+                    input(placeholder="Default: None" name="org[name]" value=data.organization.name autocomplete="off")
                     br
                     label Loading Screen Message
-                    textarea(name="org[statement]" placeholder = "Default: Welcome to The Docs!")= data.organization.statement
+                    textarea(name="org[statement]" placeholder = "Default: Welcome to The Docs!" autocomplete="off")= data.organization.statement
                     br
                     input(type="hidden" name="type" value="general")
                     br
                     br
+                    input(type="submit" value="Save")
                     h3 Slack
                     a(href="https://slack.com/oauth/authorize?client_id=361813688245.362569754774&scope=incoming-webhook")
                         img(alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x")
-                    button Save
         content(id="MySQL")
             span
                 h1.title MySQL Configuration
@@ -71,15 +71,15 @@ html
                 else if message.code < 0
                     span(style="display: block; color: #f11; text-align: center;") message.text
 
-                form(method="POST" action="")
+                form(method="POST" action="/admin")
                     label Host:
-                    input(placeholder = "Please enter a host address!" name="host" value=data.mysql.settings.host)
+                    input(placeholder = "Please enter a host address!" name="host" value=data.mysql.settings.host autocomplete="off")
                     br
                     label Schema:
-                    input(placeholder = "Please enter a schema!" name="database" value=data.mysql.settings.database)
+                    input(placeholder = "Please enter a schema!" name="database" value=data.mysql.settings.database autocomplete="off")
                     br
                     label Username:
-                    input(placeholder = "Please enter a username!" name="username" value=data.mysql.settings.user autocomplete='username')
+                    input(placeholder = "Please enter a username!" name="username" value=data.mysql.settings.user autocomplete="off")
                     br
                     label Change Password:
                     br
@@ -88,5 +88,5 @@ html
                     input(type="password" name="confirm_password" placeholder = "Confirm Password" autocomplete='new-password')
                     br
                     input(type="hidden" name="type" value="mysql")
-                    button Save and Connect
+                    input(type="submit" value="Save and Connect")
         script(src="/js/pageViewer.js")

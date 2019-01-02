@@ -227,11 +227,17 @@ content {
             margin: 3px;
         }
 
-        content > span > form > button {
+        content > span > form > input[type=submit] {
             padding: 5px 10px;
             float: right;
             margin: 10px 16px;
             background-color: #ddd;
+            box-shadow: none;
+            border: 0;
+            width: auto;
+            min-width: unset;
+            max-width: unset;
+            cursor: pointer;
         }
 
 .title {
