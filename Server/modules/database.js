@@ -5,26 +5,9 @@ var mysql = require('mysql');
 var Store = require('../modules/store');
 var store = new Store();
 
-// Recurcively Test user
-const loginTest = (username, password, users, seek) => {
-    if (seek < users.length) {
-        if (users[seek].username === username || users[seek].email === username) {
-            if (bcrypt.compareSync(password, users[seek].password)) {
-                // log data
-                let date = new Date();
-                console.log(users[seek].name_first + " " + users[seek].name_last + " (" + username + ") logged in at " + date);
-                // send data back
-                return { err: "", result: users[seek] };
-            } else {
-                return { err: "Invalid Password!" };
-            }
-        } else {
-            return loginTest(username, password, users, seek + 1);
-        }
-    } else {
-        return { err: 'There is no user named ' + username + '!' };
-    }
-};
+const isEmail = (username) => {
+    return /^[a-zA-Z0-9.!#$%&*+/=?^_{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(username);
+}
 
 class database {
     constructor() {
@@ -149,11 +132,35 @@ class database {
     // Login User
     login(username, password, callback) {
         let user;
-        this.db.query("SELECT * FROM users", function (err, result) {
-            if (err) throw err;
-            console.log("User is connecting");
-            return callback(loginTest(username, password, result, 0));
-        });
+        if (isEmail(username)) {
+            this.db.query("SELECT * FROM users where email = '" + username + "'", function (err, result) {
+                if (err) throw err;
+                if (result.length > 0) {
+                    if (bcrypt.compareSync(password, result[0].password)) {
+                        console.log("User is connecting");
+                        return callback({ err: "", result: result[0]});
+                    } else {
+                        return callback({ err: "Invalid username or password!" });
+                    }
+                } else {
+                    return callback({ err: "Invalid username or password!" });
+                }
+            });
+        } else {
+            this.db.query("SELECT * FROM users where username = '" + username + "'", function (err, result) {
+                if (err) throw err;
+                if (result.length > 0) {
+                    if (bcrypt.compareSync(password, result[0].password)) {
+                        console.log("User is connecting");
+                        return callback({ err: "", result: result[0]});
+                    } else {
+                        return callback({ err: "Invalid username or password!" });
+                    }
+                } else {
+                    return callback({ err: "Invalid username or password!" });
+                }
+            });
+        }
     }
 
     // Register User
