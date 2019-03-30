@@ -8,6 +8,7 @@ const bcrypt = require('bcrypt');
 const mysql = require('mysql');
 const path = require('path');
 const pug = require('pug');
+const logger = require('morgan');
 const Store = require('./modules/store.js');
 const store = new Store();
 
@@ -30,6 +31,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(logger(':remote-addr :method :url :status :response-time ms'));
 
 // Verify a connection
 app.post('/', function (req, res) {
