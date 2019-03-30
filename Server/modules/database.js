@@ -137,7 +137,9 @@ class database {
                 if (err) throw err;
                 if (result.length > 0) {
                     if (bcrypt.compareSync(password, result[0].password)) {
-                        console.log("User is connecting");
+                        // log data
+                        let date = new Date();
+                        console.log(users[seek].name_first + " " + users[seek].name_last + " (" + username + ") logged in at " + date);
                         return callback({ err: "", result: result[0]});
                     } else {
                         return callback({ err: "Invalid username or password!" });
@@ -151,7 +153,9 @@ class database {
                 if (err) throw err;
                 if (result.length > 0) {
                     if (bcrypt.compareSync(password, result[0].password)) {
-                        console.log("User is connecting");
+                        // log data
+                let date = new Date();
+                console.log(users[seek].name_first + " " + users[seek].name_last + " (" + username + ") logged in at " + date);
                         return callback({ err: "", result: result[0]});
                     } else {
                         return callback({ err: "Invalid username or password!" });
