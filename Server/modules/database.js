@@ -131,7 +131,6 @@ class database {
 
     // Login User
     login(username, password, callback) {
-        let user;
         if (isEmail(username)) {
             this.db.query("SELECT * FROM users where email = '" + username + "'", function (err, result) {
                 if (err) throw err;
@@ -139,7 +138,7 @@ class database {
                     if (bcrypt.compareSync(password, result[0].password)) {
                         // log data
                         let date = new Date();
-                        console.log(users[seek].name_first + " " + users[seek].name_last + " (" + username + ") logged in at " + date);
+                        console.log(result[0].name_first + " " + result[0].name_last + " (" + username + ") logged in at " + date);
                         return callback({ err: "", result: result[0]});
                     } else {
                         return callback({ err: "Invalid username or password!" });
@@ -154,8 +153,8 @@ class database {
                 if (result.length > 0) {
                     if (bcrypt.compareSync(password, result[0].password)) {
                         // log data
-                let date = new Date();
-                console.log(users[seek].name_first + " " + users[seek].name_last + " (" + username + ") logged in at " + date);
+                        let date = new Date();
+                        console.log(result[0].name_first + " " + result[0].name_last + " (" + username + ") logged in at " + date);
                         return callback({ err: "", result: result[0]});
                     } else {
                         return callback({ err: "Invalid username or password!" });
@@ -169,7 +168,6 @@ class database {
 
     // Register User
     register(profile, callback) {
-        let user;
         let db = this.db;
         this.db.query("SELECT * FROM users", function (err, result) {
             if (err) throw err;
