@@ -47,7 +47,7 @@ app.post('/', function (req, res) {
 // Login to the docs
 app.post('/login', function (req, res) {
     let { username, password } = req.body;
-    console.log(username + " is logging in");
+    console.log(username + " is logging in", req.body);
     db.login(username, password, function (data) {
         res.json(data);
     });
