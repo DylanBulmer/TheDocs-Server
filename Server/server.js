@@ -231,6 +231,8 @@ app.get('/journals/:date', (req, res) => {
 app.post('/log/:type/:id', (req, res) => {
     let profile = req.body;
 
+    console.log(profile);
+
     let info, data, log;
     if (req.params.type === "user") {
         info = db.getUserAsync(req.params.id).then((user) => { data = user; });
@@ -246,6 +248,10 @@ app.post('/log/:type/:id', (req, res) => {
         return res.json({
             "info": data,
             "logs": log
+        });
+    }).catch(err => {
+        return res.json({
+            "err": err
         });
     });
 });

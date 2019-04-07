@@ -19,6 +19,7 @@ class database {
     // Connect to database
     connect() {
         let self = this;
+
         this.db = mysql.createConnection(this.data);
 
         this.db.connect(function (err) {
@@ -103,7 +104,7 @@ class database {
                 console.log("TABLE 'Documents' ............... Good");
             }
         });
-        this.db.query("CREATE TABLE IF NOT EXISTS `journals` (`id` int(11) NOT NULL AUTO_INCREMENT,`user_id` int(4) NOT NULL,`project_id` int(4) NOT NULL,`created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,`description` varchar(255) NOT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
+        this.db.query("CREATE TABLE IF NOT EXISTS `journals` (`id` int(11) NOT NULL AUTO_INCREMENT,`user_id` int(4) NOT NULL,`project_id` int(4) NOT NULL,`created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,`description` varchar(255) NOT NULL,`completed` tinyint(1) DEFAULT '0', PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
             if (err) {
                 console.log("CREATE TABLE 'Journals' ......... Failed");
                 console.log(err.message);
@@ -111,7 +112,7 @@ class database {
                 console.log("TABLE 'Journals' ................ Good");
             }
         });
-        this.db.query("CREATE TABLE IF NOT EXISTS `todo` (`id` int(11) NOT NULL AUTO_INCREMENT,`user_id` int(4) NOT NULL,`project_id` int(4) NOT NULL,`created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,`completed` timestamp NULL,`description` varchar(255) NOT NULL,`is_done` int(1) NOT NULL DEFAULT 0,PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
+        this.db.query("CREATE TABLE IF NOT EXISTS `todo` (`id` int(11) NOT NULL AUTO_INCREMENT,`user_id` int(4) NOT NULL,`project_id` int(4) NOT NULL,`created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,`completed` timestamp NULL,`description` varchar(255) NOT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;", (err, result) => {
             if (err) {
                 console.log("CREATE TABLE 'Todo' ............. Failed");
                 console.log(err.message);
@@ -230,16 +231,16 @@ class database {
     // Use this function to validate if the user is logged in/is the current user
     async checkUser(profile) {
         // profile must include: id, user( name || email ) and token.
-        return new Promise(callback => {
+        return new Promise((resolve, reject) => {
             profile = profile.user;
-            this.db.query("SELECT * FROM users WHERE id=" + profile.id, function (err, rows, fields) {
-                if (err) callback(err);
+            this.db.query("SELECT * FROM users WHERE id='" + profile.id + "'", function (err, rows, fields) {
+                if (err) reject(err);
                 let user = rows[0];
 
                 if ((profile.username === user.username || profile.username === user.email) && profile.token === user.token) {
-                    return callback(true);
+                    return resolve(true);
                 } else {
-                    return callback(false);
+                    return resolve(false);
                 }
             });
         });
@@ -298,6 +299,8 @@ class database {
             } else {
                 callback({ err: "You're not logged in!" });
             }
+        }).catch(err => {
+            callback({err: err});
         });
     }
 
@@ -346,6 +349,8 @@ class database {
             } else {
                 callback({ err: "You're not logged in!" });
             }
+        }).catch(err => {
+            callback({err: err});
         });
     }
 
@@ -379,6 +384,8 @@ class database {
             } else {
                 callback({ err: "You're not logged in!" });
             }
+        }).catch(err => {
+            callback({err: err});
         });
     }
 
@@ -405,6 +412,8 @@ class database {
             } else {
                 callback({ err: "You're not logged in!" });
             }
+        }).catch(err => {
+            callback({err: err});
         });
     }
 
@@ -439,6 +448,8 @@ class database {
             } else {
                 callback({ err: "You're not logged in!" });
             }
+        }).catch(err => {
+            callback({err: err});
         });
     }
 
@@ -473,6 +484,8 @@ class database {
             } else {
                 callback({ err: "You're not logged in!" });
             }
+        }).catch(err => {
+            callback({err: err});
         });
     }
 
@@ -522,6 +535,7 @@ class database {
             }
         }).catch((e) => {
             console.log(e);
+            callback({err: e});
         });
     }
 
@@ -652,6 +666,8 @@ class database {
                         callback(project);
                     });
                 });
+            }).catch(err => {
+                callback({err: err});
             });
         });
     }
@@ -838,7 +854,7 @@ class database {
                             // Grab Documents and journals by user
                             this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE user_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
                                 if (err) {
-                                    return callback(err);
+                                    return callback({err: err});
                                 } else {
                                     return callback(rows);
                                 }
@@ -849,7 +865,7 @@ class database {
                             // Grab documents and journals by project
                             this.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE project_id = " + id + " ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
                                 if (err) {
-                                    return callback(err);
+                                    return callback({err: err});
                                 } else {
                                     return callback(rows);
                                 }
@@ -873,7 +889,7 @@ class database {
                                         // Grab documents and journals for all users
                                         self.db.query("SELECT results.*, users.name_first, users.name_last FROM ((SELECT id, user_id, project_id, title, created FROM documents) UNION ALL (SELECT id, user_id, project_id, NULL AS title, created FROM journals)) AS results LEFT JOIN users ON (users.id = results.user_id) WHERE (" + where + ") ORDER BY created DESC LIMIT 20 OFFSET " + 20 * offset, (err, rows, fields) => {
                                             if (err) {
-                                                return callback(err);
+                                                return callback({err: err});
                                             } else {
                                                 return callback(rows);
                                             }
@@ -888,6 +904,8 @@ class database {
                 } else {
                     return callback({ err: "You're not logged in!" });
                 }
+            }).catch(err => {
+                callback({err: err});
             });
         });
     }
