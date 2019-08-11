@@ -1,1 +1,18 @@
-{"port":"1337","url":"141.114.240.7","host":"localhost","secret":"secret_key","code":"1234","firstTime":false,"mysql":{"host":"localhost","database":"thedocs","user":"thedocs","password":"password"},"organization":{"name":"Bulmer Solutions","statement":"Welcome to The Docs"}}
+{
+  "port":1337,
+  "url":"0.0.0.0",
+  "host":"localhost",
+  "secret":"secret_key",
+  "code":"1234",
+  "firstTime":false,
+  "mysql": {
+    "host":"localhost",
+    "user":"thedocs",
+    "password":"password",
+    "database":"thedocs"
+  },
+  "organization": {
+    "name":"Bulmer Solutions Test",
+    "statement":"Welcome to The Docs"
+  }
+}

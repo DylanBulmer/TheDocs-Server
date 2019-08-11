@@ -260,4 +260,5 @@ paket-files/
 __pycache__/
 *.pyc
 
-Server/config.json
+.config/
+config.json
