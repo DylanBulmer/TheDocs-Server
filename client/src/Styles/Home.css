@@ -10,7 +10,7 @@
   user-select: none;
 }
 
-.App-header {
+.Header {
   background-color: #282c34;
   height: 40vmin;
   min-height: 150px;
@@ -21,7 +21,7 @@
   position: relative;
 }
 
-.App-bar {
+.TopBar {
   background-color: #1f2229;
   height: 50px;
   width: 100%;
@@ -35,11 +35,27 @@
   box-shadow: -1px 2px 4px 0 rgba(0,0,0,0.16),-1px 2px 10px 0 rgba(0,0,0,0.12);
 }
 
-.App-bar-btn {
+.TopBar > a {
   height: calc(100% - 8px);
   padding: 4px 1em;
   display: inline-block;
   line-height: 42px;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.TopBar img {
+  padding: 12px 0;
+  padding-left: 12px;
+  max-width: 160px;
+  height: calc(100% - 24px);
+  display: inline-block;
+  position: relative;
+}
+
+.TopBar img#logo {
+  padding: 5px 0;
+  height: calc(100% - 10px);
 }
 
 .App-body {
@@ -58,7 +74,7 @@
   position: relative;
 }
 
-.App-footer {
+.Footer {
   width: calc(100% - 4em);
   background-color: #15171d;
   position: relative;
@@ -66,8 +82,13 @@
   left: 0;
   padding: 2em;
   justify-content: center;
+  font-size: 12px;
 }
 
 p {
   text-indent: 2em;
+}
+
+a:active, a:hover, a {
+  color: #1177ff;
 }
